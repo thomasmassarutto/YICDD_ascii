@@ -291,7 +291,8 @@ int main(){
 
     //add_line(p, -4, 10);
 
- 
+    add_circle(p, &c1, 4);
+    add_circle(p, &c2, 4);
 
     //add_segment(p, &point_d, &point_a);
     add_figure(p,rectangle);
