@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -89,7 +88,7 @@ Plane *New_plane(int width, int height){
 
     for (int i=0; i< height; i++){
         for (int j=0;j <width; j++){
-            p->area[i][j]= ' ';
+            p->area[i][j]= '.';
         }
     }
 
@@ -114,9 +113,9 @@ int add_point(Plane *p, int x, int y){
     int pos_x= x ;
     int pos_y= (p->height - y) -1;
 
-
     if( (0 <= pos_x && pos_x < p->width) && (0<= pos_y && pos_y < p->height) ){
-        p->area[pos_y][pos_x] = '*';
+        p->area[pos_y][pos_x] = '@';
+        //printf("(x: %d, y:%d)\n", pos_x, pos_y);
         return 1;
     }else{
         printf("occio: x: %d, y:%d\n", pos_x, pos_y);
@@ -129,13 +128,14 @@ int add_point(Plane *p, int x, int y){
 * y=mx+q
 * x=(y-q)/m
 */
-int add_line(Plane*p, double slope, double intercept){
+int _line(Plane*p, double slope, double intercept, int x_start, int x_finish){
 
-    int x=0;
+    int x= x_start;
     int y=0;
+    int old_y=y;
 
-    while (x< p->width && y < p->height -1){
-        int old_y=y;
+    while (x<= x_finish && y < p->height -1){ //p-> width
+        old_y=y;
         y= (slope * x) + intercept;
         if(0<= y && y< p->height){
             if (!add_point(p, x, y)){
@@ -143,31 +143,41 @@ int add_line(Plane*p, double slope, double intercept){
             }
         }
 
-        // fallback to make lines thickkkk
-        while (abs(old_y -y) > 1){
-
+        //fallback to make lines thickkkk
+        while (abs(old_y - y) > 1){
+               
             if ( old_y < y){
-                old_y= old_y+1;
+                old_y= old_y+ 1;
             }else {
                 old_y= old_y-1;
             }
             
-            int fallback_x= ((old_y) - intercept) / slope;
-            
-            if ( 0 <= fallback_x && fallback_x < p->width ){
+            int fallback_x= floor((old_y - intercept) / slope);
+          
+            if ( x_start <= fallback_x && fallback_x <= x_finish ){
                 if(!add_point(p, fallback_x, old_y)){
                     return 1;
                 }
             }   
         }
+        
         x++;
     }
     return 0;
 }
 
 
-int add_circle(Plane *p, Point *center, double radius){
+int add_line(Plane*p, double slope, double intercept){
 
+    if (!_line(p, slope, intercept, 0, p->width )){
+        return 1;
+    };
+
+    return 0;
+}
+
+
+int add_circle(Plane *p, Point *center, double radius){
 
     int y_up=0;
     int y_down=0;
@@ -237,15 +247,12 @@ int add_segment(Plane *p,Point *start, Point *finish){
         add_segment(p, finish, start);
     }else{
         double slope= (finish->y -start->y) / (finish->x -start->x);
+        double intercept= start->y - (((start->y - finish->y)/(start->x - finish->x)) * start->x);
 
-        //printf("%lf", slope);
+        if (!_line(p, slope, intercept, start->x, finish->x )){
+            return 1;
+        };
     
-        for (int x = start->x; x <= finish->x; x++) {
-            int y = start->y + (slope * (x - start->x));  
-            if(!add_point(p, x, y)){
-                return 1;
-            }  
-        }
     }
 
     return 0;
@@ -267,35 +274,94 @@ int add_figure(Plane *p, Vertices *vertices){
 int main(){
     Plane *p = New_plane(40,40);
 
-    Point point_a= {15, 6};
-    Point point_b= {20, 6};
-    Point point_c= {20, 25};
-    Point point_d= {15, 25};
+    Point wall_a= {1, 1};
+    Point wall_b= {19, 1};
+    Point wall_c= {19, 10};
+    Point wall_d= {1, 10};
 
-    Point c1={13,3};
-    Point c2={22,3};
+    Vertices *wall= NULL;
 
-    Vertices *rectangle= NULL;
+    push(&wall, &wall_a);
+    push(&wall, &wall_b);
+    push(&wall, &wall_c);
+    push(&wall, &wall_d);
+    push(&wall, &wall_a);
 
-    push(&rectangle, &point_a);
-    push(&rectangle, &point_b);
-    push(&rectangle, &point_c);
-    push(&rectangle, &point_d);
-    push(&rectangle, &point_a);
+    Vertices *door= NULL;
+
+    Point door_a= {3, 1};
+    Point door_b= {7, 1};
+    Point door_c= {7, 8};
+    Point door_d= {3, 8};
+
+    push(&door, &door_a);
+    push(&door, &door_b);
+    push(&door, &door_c);
+    push(&door, &door_d);
+    push(&door, &door_a);
+    
+    Vertices *window= NULL;
+
+    Point window_a= {11, 4};
+    Point window_b= {17, 4};
+    Point window_c= {17, 8};
+    Point window_d= {11, 8};
+
+    push(&window, &window_a);
+    push(&window, &window_b);
+    push(&window, &window_c);
+    push(&window, &window_d);
+    push(&window, &window_a);
+
+    Vertices *roof= NULL;
+
+    Point roof_a= {1, 10};
+    Point roof_b= {19, 10};
+    Point roof_c= {16, 15};
+    Point roof_d= {5, 15};
+
+    push(&roof, &roof_a);
+    push(&roof, &roof_b);
+    push(&roof, &roof_c);
+    push(&roof, &roof_d);
+    push(&roof, &roof_a);
  
-
     //print_points(rectangle);
 
 
     //add_point(p, 1, 1);
 
-    //add_line(p, -4, 10);
+    //add_line(p, 3, 10);
 
-    add_circle(p, &c1, 4);
-    add_circle(p, &c2, 4);
+    //add_circle(p, &c1, 4);
+    //add_circle(p, &window_b, 7);
 
-    //add_segment(p, &point_d, &point_a);
-    add_figure(p,rectangle);
+    /*
+    Point p1={10, 30};
+    Point p2={20,10};
+    Point p3={25,20};
+
+    Point igor1= {0,10};
+    Point igor2= {3,2};
+
+    
+    Vertices *linea_spezzata=NULL;
+    push(&linea_spezzata, &p1);
+    push(&linea_spezzata, &p2);
+    push(&linea_spezzata, &p3);
+    //push(&linea_spezzata, &p1);
+    */
+    
+    //add_segment(p, &igor1, &igor2);
+    //add_segment(p, &p3, &p2);
+    //add_segment(p, &p1, &p3);
+
+    //add_point(p, 0,0 );
+    //add_point(p, 2, 0);
+    add_figure(p,wall);
+    add_figure(p, door);
+    add_figure(p, window);
+    add_figure(p, roof);
 
     draw(p);
 
